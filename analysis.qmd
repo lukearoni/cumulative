@@ -2,5 +2,33 @@
 title: "Cumulative"
 format: html
 author: Luke Li
+execute: 
+  echo: false
 ---
 
+```{r}
+#| message: false
+library(tidyverse)
+library(primer.data)
+```
+
+```{r}
+x <- ces |> 
+  filter(year == 2020) |> 
+    select(approval, education, ideology) |> 
+      drop_na() |> 
+        slice_sample(n = 2000)
+
+x |> 
+  ggplot(aes(x = ideology, fill = approval)) + 
+    geom_bar() + 
+      labs(
+        title = "Relationship Between President Approval and Political ideology",
+        subtitle = "Most people strongly disapprove",
+        x = "Political Ideology",
+        y = "Count",
+        caption = "Source: Data from the Cooperative Election Study",
+        fill = "Approval of the President")
+```
+
+A person's approval of a President can be be explained by their political ideology. Using data from the 2020 Cooperative Election Study (CES), we aim to find the relationship between voter political ideology and their approval rating of President Trump. A potential weakness in our model is that our data is not necessarily representative of the population. Because the data was collected through a survey, there is a voluntary response bias, meaning that those who had stronger political opinions likely responded more, thus giving our data bias.
