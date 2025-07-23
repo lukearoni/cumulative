@@ -8,16 +8,23 @@ execute:
 
 ```{r}
 #| message: false
+library(MASS)
 library(tidyverse)
 library(primer.data)
+library(broom)
+library(easystats)
+
+tidy_approval <- read_rds("data/tidy_approval.rds")
+
 ```
 
 ```{r}
-x <- ces |> 
-  filter(year == 2020) |> 
-    select(approval, education, ideology) |> 
-      drop_na() |> 
-        slice_sample(n = 2000)
+x <- ces |>
+  filter(year == 2020) |>
+  select(approval, ideology, education) |>
+  drop_na() |> 
+  filter(! ideology %in% "Not Sure") |> 
+  mutate(ideology = fct_drop(ideology))
 
 x |> 
   ggplot(aes(x = ideology, fill = approval)) + 
@@ -31,4 +38,47 @@ x |>
         fill = "Approval of the President")
 ```
 
-A person's approval of a President can be be explained by their political ideology. Using data from the 2020 Cooperative Election Study (CES), we aim to find the relationship between voter political ideology and their approval rating of President Trump. A potential weakness in our model is that our data is not necessarily representative of the population. Because the data was collected through a survey, there is a voluntary response bias, meaning that those who had stronger political opinions likely responded more, thus giving our data bias.
+```{r}
+#| message: false
+fit_approval <- polr(approval ~ ideology + education,
+                      data = x)
+```
+
+```{r}
+library(dplyr)
+library(gt)
+
+fit_approval |> 
+        tidy(conf.int = TRUE) |>
+  select(term, estimate, conf.low, conf.high) |>
+  mutate(
+    estimate = round(estimate, 2),
+    conf.low = round(conf.low, 2),
+    conf.high = round(conf.high, 2),
+    `95% CI` = paste0("[", conf.low, ", ", conf.high, "]")
+  ) |>
+  select(term, estimate, `95% CI`) |>
+  gt() |>
+  cols_label(
+    term = "Term",
+    estimate = "Estimate"
+  ) |>
+  tab_header(
+    title = "Model Coefficients with 95% Confidence Intervals"
+  )
+```
+
+$$
+P(Y \leq k) = \frac{1}{1 + e^{-(\alpha_k - \beta_1 \cdot \text{ideology} - \beta_2 \cdot \text{education})}}
+$$
+
+$$
+\begin{aligned}
+\log\left[ \frac { P( \operatorname{approval}  \leq  \operatorname{Strongly\ Disapprove} ) }{ 1 - P( \operatorname{approval}  \leq  \operatorname{Strongly\ Disapprove} ) } \right] &= 2.26 + 0.61(\operatorname{ideology}_{\operatorname{Liberal}}) + 2.4(\operatorname{ideology}_{\operatorname{Moderate}}) + 4.46(\operatorname{ideology}_{\operatorname{Conservative}}) + 5.45(\operatorname{ideology}_{\operatorname{Very\ Conservative}}) - 0.1(\operatorname{education}_{\operatorname{High\ School\ Graduate}}) - 0.31(\operatorname{education}_{\operatorname{Some\ College}}) - 0.32(\operatorname{education}_{\operatorname{2-Year}}) - 0.52(\operatorname{education}_{\operatorname{4-Year}}) - 0.73(\operatorname{education}_{\operatorname{Post-Grad}}) \\
+\log\left[ \frac { P( \operatorname{approval}  \leq  \operatorname{Disapprove\ /\ Somewhat\ Disapprove} ) }{ 1 - P( \operatorname{approval}  \leq  \operatorname{Disapprove\ /\ Somewhat\ Disapprove} ) } \right] &= 2.73 + 0.61(\operatorname{ideology}_{\operatorname{Liberal}}) + 2.4(\operatorname{ideology}_{\operatorname{Moderate}}) + 4.46(\operatorname{ideology}_{\operatorname{Conservative}}) + 5.45(\operatorname{ideology}_{\operatorname{Very\ Conservative}}) - 0.1(\operatorname{education}_{\operatorname{High\ School\ Graduate}}) - 0.31(\operatorname{education}_{\operatorname{Some\ College}}) - 0.32(\operatorname{education}_{\operatorname{2-Year}}) - 0.52(\operatorname{education}_{\operatorname{4-Year}}) - 0.73(\operatorname{education}_{\operatorname{Post-Grad}}) \\
+\log\left[ \frac { P( \operatorname{approval}  \leq  \operatorname{Neither\ Approve\ nor\ Disapprove} ) }{ 1 - P( \operatorname{approval}  \leq  \operatorname{Neither\ Approve\ nor\ Disapprove} ) } \right] &= 2.82 + 0.61(\operatorname{ideology}_{\operatorname{Liberal}}) + 2.4(\operatorname{ideology}_{\operatorname{Moderate}}) + 4.46(\operatorname{ideology}_{\operatorname{Conservative}}) + 5.45(\operatorname{ideology}_{\operatorname{Very\ Conservative}}) - 0.1(\operatorname{education}_{\operatorname{High\ School\ Graduate}}) - 0.31(\operatorname{education}_{\operatorname{Some\ College}}) - 0.32(\operatorname{education}_{\operatorname{2-Year}}) - 0.52(\operatorname{education}_{\operatorname{4-Year}}) - 0.73(\operatorname{education}_{\operatorname{Post-Grad}}) \\
+\log\left[ \frac { P( \operatorname{approval}  \leq  \operatorname{Approve\ /\ Somewhat\ Approve} ) }{ 1 - P( \operatorname{approval}  \leq  \operatorname{Approve\ /\ Somewhat\ Approve} ) } \right] &= 3.93 + 0.61(\operatorname{ideology}_{\operatorname{Liberal}}) + 2.4(\operatorname{ideology}_{\operatorname{Moderate}}) + 4.46(\operatorname{ideology}_{\operatorname{Conservative}}) + 5.45(\operatorname{ideology}_{\operatorname{Very\ Conservative}}) - 0.1(\operatorname{education}_{\operatorname{High\ School\ Graduate}}) - 0.31(\operatorname{education}_{\operatorname{Some\ College}}) - 0.32(\operatorname{education}_{\operatorname{2-Year}}) - 0.52(\operatorname{education}_{\operatorname{4-Year}}) - 0.73(\operatorname{education}_{\operatorname{Post-Grad}})
+\end{aligned}
+$$
+
+A person's approval of a President can be be explained by their political ideology. Using data from the 2020 Cooperative Election Study (CES), we aim to find the relationship between voter political ideology and their approval rating of President Trump. A potential weakness in our model is that our data is not necessarily representative of the population. Because the data was collected through a survey, there is a voluntary response bias, meaning that those who had stronger political opinions likely responded more, thus giving our data bias. We model voter approval of President Trump as a cumulative ordinal function of political ideology.
