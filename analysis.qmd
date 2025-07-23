@@ -13,9 +13,7 @@ library(tidyverse)
 library(primer.data)
 library(broom)
 library(easystats)
-
-tidy_approval <- read_rds("data/tidy_approval.rds")
-
+library(marginaleffects)
 ```
 
 ```{r}
@@ -36,6 +34,35 @@ x |>
         y = "Count",
         caption = "Source: Data from the Cooperative Election Study",
         fill = "Approval of the President")
+```
+
+```{r}
+library(ggplot2)
+library(ggthemes)
+library(ggtext)  # for rich text subtitle (optional)
+
+ggplot(x, aes(x = ideology, y = approval, color = education)) +
+  geom_jitter(width = 0.2, height = 0.01, alpha = 0.7, size = 2.5) +
+  scale_color_brewer(palette = "Set2") +
+  theme_minimal(base_size = 14) +
+  labs(
+    title = "Approval Levels by Political Ideology and Education Level",
+    subtitle = "Approval increases with conservatism—but varies significantly across education levels",
+    caption = "Source: Survey Data / Model Estimates",
+    x = "Political Ideology",
+    y = "Approval Probability",
+    color = "Education Level"
+  ) +
+  theme(
+    plot.title = element_text(face = "bold", size = 18),
+    plot.subtitle = element_markdown(size = 13, margin = margin(b = 10)),
+    plot.caption = element_text(size = 10, face = "italic"),
+    axis.title = element_text(size = 13),
+    legend.title = element_text(size = 13),
+    legend.position = "right",
+    panel.grid.major.y = element_line(color = "grey90"),
+    panel.grid.major.x = element_blank()
+  )
 ```
 
 ```{r}
@@ -81,4 +108,4 @@ $$
 \end{aligned}
 $$
 
-A person's approval of a President can be be explained by their political ideology. Using data from the 2020 Cooperative Election Study (CES), we aim to find the relationship between voter political ideology and their approval rating of President Trump. A potential weakness in our model is that our data is not necessarily representative of the population. Because the data was collected through a survey, there is a voluntary response bias, meaning that those who had stronger political opinions likely responded more, thus giving our data bias. We model voter approval of President Trump as a cumulative ordinal function of political ideology.
+A person's approval of a President can be be explained by their political ideology. Using data from the 2020 Cooperative Election Study (CES), we aim to find the relationship between voter political ideology and their approval rating of President Trump. A potential weakness in our model is that our data is not necessarily representative of the population. Because the data was collected through a survey, there is a voluntary response bias, meaning that those who had stronger political opinions likely responded more, thus giving our data bias. We model voter approval of President Trump as a cumulative ordinal function of political ideology. One of our quantites of interest was  the impact of being very conservative. People who are very conservative are more likely to approve the president higher by about 5.6 compared to people who are very liberal. We are 95% confident that the true value is between 4.9 and 6.2. Our estimates and confidence intervals might not be wrong because the data is not perfect. We have noticed some potential problems such as in validity; people could be lying about thier approval of the president or misidentifying their ideology. These concerns can cause our findings to be inaccurate. The true estimate and confidence interval might be different. The interval would be bigger because we have uncertainties about the data.
